@@ -4,7 +4,8 @@
             [check-auth.ui.windows :as w]
             [check-auth.ui.formatting :as f]
             [check-auth.ui.input :as i]
-            [check-auth.ui.utils :as u])
+            [check-auth.ui.utils :as u]
+            [check-auth.config :refer [config]])
   (:gen-class))
 
 
@@ -23,10 +24,10 @@
   []
   (let [w1 (w/make-window :w1 60 20)
         win-cols (w/get-window-columns :w1)
-        win-rows (w/get-window-rows :w1)]
+        win-rows (w/get-window-rows :w1)
+        title (str (:app-name config) " " (:app-version config) " " (:app-profile config))]
     (w/create-window :w1)
-    (u/write-line :w1 (f/centre-text "Authentication Check" win-cols))
-    (u/write-line :w1 (f/centre-text "--------------------" win-cols))
+    (u/write-line :w1 (f/centre-text title win-cols))
     (u/write-line :w1 (f/centre-text "Enter :exit to quit" win-cols))
     (loop [input (get-username :w1 (- win-rows 2))]
       (when-not (= ":exit" input)
@@ -44,5 +45,6 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (println "Hello, World!")
-  )
+  (println "Application: " (:app-name config))
+  (println "Version:     " (:app-version config))
+  (println "Profile:     " (:app-profile config)))
