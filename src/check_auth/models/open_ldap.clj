@@ -17,10 +17,4 @@
     (ldap/release-connection ldap-pool conn)
     id-rec))
 
-(defn get-identities [etype]
-  (let [conn (ldap/get-connection ldap-pool)
-        rslt (ldap/search conn dn {:filter (str "(employeeType=" etype ")")
-                              :attributes [:uid]
-                              :size-limit 0})]
-    (ldap/release-connection ldap-pool conn)
-    (map :uid rslt)))
+
