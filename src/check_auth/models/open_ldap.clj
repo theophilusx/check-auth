@@ -18,6 +18,6 @@
       (ldap/release-connection ldap-pool conn)
       [id-rec "OK"])
     (catch Exception e
-      [nil (str "LDAP Error: " (.getMessage e))])))
+      [nil (str "LDAP Error: " (.getMessage e) " for ID " id)])))
 
 

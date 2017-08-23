@@ -23,38 +23,29 @@
   (w/redraw-window window)
   (i/read-input-line window))
 
+(defn get-id-args [window row]
+  (let [id (get-username window row)
+        pwd (if-not (or (= ":exit" id)
+                        (= "" id))
+              (get-password window (inc row))
+              nil)]
+    {:id id :pwd pwd}))
 
-(defn display-ldap-info [uid win]
-  (let [[user msg] (ldap/get-id uid)]
-    (println (str "MSG: " msg))
-    (println (str "USER: " user))
-    (cond
-      (and (= msg "OK")
-           user)  (let [last-change-str (tf/unparse date-formatter
-                                                    (util/last-change-date
-                                                     (util/parse-int (:shadowLastChange user))))]
-                    (u/write-text win (str "Username: " (:uid user)) 2 5)
-                    (u/write-text win (str "Employee Number: " (:employeeNumber user)) 2 6)
-                    (u/write-text win (str "Display Name: " (:displayName user)) 2 7)
-                    (u/write-text win (str "Employee Type: " (:employeeType user)) 2 8)
-                    (u/write-text win (str "Shadow Max: " (:shadowMax user)) 2 9)
-                    (u/write-text win (str "Shadow Warning: " (:shadowWarning user)) 2 10)
-                    (u/write-text win (str "Shadow Last Change: " last-change-str) 2 11)
-                    true)
-      (and (= msg "OK")
-           (= user nil)) (do
-                           (u/write-text win (str "Identity " uid " not in LDAP") 2 5)
-                           false)
-      (not (= msg "OK")) (do
-                           (u/write-text win (str "Connection to LDAP failed") 2 5)
-                           false)
-      (u/write-text win (str "Unknown error - contact administrator"))
-      false)))
+(defn display-ldap-info [user win]
+  (let [last-change-str (tf/unparse date-formatter
+                                    (util/last-change-date
+                                     (util/parse-int (:shadowLastChange user))))]
+    (u/write-text win (str "Username: " (:uid user)) 2 5)
+    (u/write-text win (str "Employee Number: " (:employeeNumber user)) 2 6)
+    (u/write-text win (str "Display Name: " (:displayName user)) 2 7)
+    (u/write-text win (str "Employee Type: " (:employeeType user)) 2 8)
+    (u/write-text win (str "Shadow Max: " (:shadowMax user)) 2 9)
+    (u/write-text win (str "Shadow Warning: " (:shadowWarning user)) 2 10)
+    (u/write-text win (str "Shadow Last Change: " last-change-str) 2 11)))
 
-(defn display-pwd-info [uid win]
-  (let [pwd (get-password :w1 (- (w/get-window-rows win) 2))]
-            (u/write-text :w1 (str "Password " pwd) 2 12)
-            (w/redraw-window :w1)))
+(defn display-pwd-info [user-rec pwd win]
+  (u/write-text :w1 (str "Password " pwd) 2 12)
+  (w/redraw-window :w1))
 
 (defn main-window
   "Main UI window"
@@ -62,23 +53,32 @@
   (let [w1 (w/make-window :w1 60 20)
         win-cols (w/get-window-columns :w1)
         win-rows (w/get-window-rows :w1)
-        title (str (:app-name config) " " (:app-version config) " " (:app-profile config))]
+        title (str (:app-name config) " " (:app-version config) " " (:app-profile config))
+        prompt-row (- win-rows 3)]
     (w/create-window :w1)
     (u/write-line :w1 (f/centre-text title win-cols))
     (u/write-line :w1 (f/centre-text "Enter :exit to quit" win-cols))
-    (loop [username (get-username :w1 (- win-rows 2))]
-      (condp = username
+    (loop [id-info (get-id-args :w1 prompt-row)]
+      (println (str "ID-INFO: " id-info))
+      (condp = (:id id-info)
         ":exit"  (do
                    (println (str "You entered :exit to quit"))
                    (println "Destroying Window")
                    (w/destroy-window :w1)
                    (println "Exiting"))
-        "" (recur (get-username :w1 (- win-rows 2)))
-        (do
+        "" (recur (get-id-args :w1 prompt-row))
+        (let [[user-rec msg] (ldap/get-id (:id id-info))]
           (u/clear-screen :w1 \space 3)
-          (when (display-ldap-info username :w1)
-            (display-pwd-info username :w1))
-          (recur (get-username :w1 (- win-rows 2))))))))
+          (cond
+            (and (= msg "OK")
+                 user-rec) (do
+                             (display-ldap-info user-rec :w1)
+                             (display-pwd-info user-rec (:pwd id-info) :w1))
+            (and (= msg "OK")
+                 (= user-rec nil)) (u/write-text :w1 (str "Identity " (:id id-info) " not in LDAP") 2 5)
+            (not (= msg "OK")) (u/write-text :w1 (str "Connection to LDAP failed: " msg) 2 5)
+            :default (u/write-text :w1 (str "Unknown error - contact administrator")))
+          (recur (get-id-args :w1 prompt-row)))))))
 
 (defn -main
   "I don't do a whole lot ... yet."
