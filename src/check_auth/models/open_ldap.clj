@@ -12,9 +12,12 @@
 (def ldap-pool (ldap/connect server-spec))
 
 (defn get-id [id]
-  (let [conn (ldap/get-connection ldap-pool)
-        id-rec (ldap/get conn (str "uid=" id "," dn))]
-    (ldap/release-connection ldap-pool conn)
-    id-rec))
+  (try
+    (let [conn (ldap/get-connection ldap-pool)
+          id-rec (ldap/get conn (str "uid=" id "," dn))]
+      (ldap/release-connection ldap-pool conn)
+      [id-rec "OK"])
+    (catch Exception e
+      [nil (str "LDAP Error: " (.getMessage e))])))
 
 

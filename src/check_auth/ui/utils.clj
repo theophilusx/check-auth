@@ -45,15 +45,16 @@
       (recur (rest b) (inc r)))))
 
 (defn clear-screen
-  ([screen]
-   (clear-screen screen \space 0 (w/get-window-rows screen)))
-  ([screen pad-char]
-   (clear-screen screen pad-char 0 (w/get-window-rows screen)))
-  ([screen pad-char start-row]
-   (clear-screen screen pad-char start-row (w/get-window-rows screen)))
-  ([screen pad-char start-row end-row]
-   (let [cols    (inc (w/get-window-columns screen))
-         padding (reduce str "" (repeat cols pad-char))]
+  ([win]
+   (clear-screen win \space 0 (w/get-window-rows win)))
+  ([win pad-char]
+   (clear-screen win pad-char 0 (w/get-window-rows win)))
+  ([win pad-char start-row]
+   (clear-screen win pad-char start-row (w/get-window-rows win)))
+  ([win pad-char start-row end-row]
+   (let [cols    (inc (w/get-window-columns win))
+         padding (reduce str "" (repeat cols pad-char))
+         screen (w/get-window win)]
      (loop [row start-row]
        (when (< row end-row)
          (scr/put-string screen 0 row padding)
