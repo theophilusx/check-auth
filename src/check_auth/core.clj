@@ -9,9 +9,17 @@
             [check-auth.models.open-ldap :as ldap]
             [check-auth.util :as util]
             [clj-time.format :as tf])
+   (:import [jcifs.util Hexdump MD4])
   (:gen-class))
 
 (def date-formatter (tf/formatters :date))
+
+(defn hash-nt-password [pwd]
+  (let [pwd-bytes (.getBytes pwd "UnicodeLittleUnmarked")
+        md4 (doto (MD4.)
+              (.engineUpdate pwd-bytes 0 (alength pwd-bytes)))
+        hash-bytes (.engineDigest md4)]
+    (Hexdump/toHexString hash-bytes 0 (* 2 (alength hash-bytes)))))
 
 (defn get-username [window row]
   (u/command-prompt window "Username" row)
@@ -44,8 +52,16 @@
     (u/write-text win (str "Shadow Last Change: " last-change-str) 2 11)))
 
 (defn display-pwd-info [user-rec pwd win]
-  (u/write-text :w1 (str "Password " pwd) 2 12)
-  (w/redraw-window :w1))
+  (let [nt-pwd (hash-nt-password pwd)
+        ldap-nt-pwd (:sambaNTPassword user-rec)]
+    (u/write-text win (str "Password " pwd) 2 12)
+    (w/redraw-window win)
+    (if (= nt-pwd ldap-nt-pwd)
+      (u/write-text win (str "Valid NTLM Password: yes") 2 13)
+      (do
+        (u/write-text win (str "Valid NTLM Password: no") 2 13)
+        (u/write-text win (str "LDAP: " ldap-nt-pwd) 2 14)
+        (u/write-text win (str "NEW:  " nt-pwd) 2 15)))))
 
 (defn main-window
   "Main UI window"
