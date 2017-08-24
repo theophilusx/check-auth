@@ -20,4 +20,11 @@
     (catch Exception e
       [nil (str "LDAP Error: " (.getMessage e) " for ID " id)])))
 
-
+(defn check-auth [id pwd]
+  (try 
+    (let [conn      (ldap/get-connection ldap-pool)
+          bind-status (ldap/bind? conn (str "uid=" id "," dn) pwd)]
+      (ldap/release-connection ldap-pool conn)
+      [bind-status "OK"])
+    (catch Exception e
+      [nil (str "LDAP Error: " (.getMessage e) " from ID " id " and PWD " pwd)])))

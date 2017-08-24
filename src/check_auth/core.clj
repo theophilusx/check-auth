@@ -53,15 +53,21 @@
 
 (defn display-pwd-info [user-rec pwd win]
   (let [nt-pwd (hash-nt-password pwd)
-        ldap-nt-pwd (:sambaNTPassword user-rec)]
+        ldap-nt-pwd (:sambaNTPassword user-rec)
+        [bind-status msg] (ldap/check-auth (:uid user-rec) pwd)]
     (u/write-text win (str "Password " pwd) 2 12)
     (w/redraw-window win)
+    (println (str "Bind Status: " bind-status " MSG: " msg))
+    (condp = bind-status
+      true (u/write-text win (str "Password Match: yes") 2 13)
+      false (u/write-text win (str "Password Match: no") 2 13)
+      nil (u/write-text win (str "Password Match: LDAP Error: " msg " with ID " (:uid user-rec) " and PWD " pwd) 2 13))
     (if (= nt-pwd ldap-nt-pwd)
-      (u/write-text win (str "Valid NTLM Password: yes") 2 13)
+      (u/write-text win (str "Valid NTLM Password: yes") 2 14)
       (do
-        (u/write-text win (str "Valid NTLM Password: no") 2 13)
-        (u/write-text win (str "LDAP: " ldap-nt-pwd) 2 14)
-        (u/write-text win (str "NEW:  " nt-pwd) 2 15)))))
+        (u/write-text win (str "Valid NTLM Password: no") 2 14)
+        (u/write-text win (str "LDAP: " ldap-nt-pwd) 2 15)
+        (u/write-text win (str "NEW:  " nt-pwd) 2 16)))))
 
 (defn main-window
   "Main UI window"
