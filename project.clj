@@ -5,7 +5,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [jcifs/jcifs "1.3.18"]
                  [org.clojars.pntblnk/clj-ldap "0.0.12"]
-                 [cprop "0.1.10"]
+                 [cprop "0.1.11"]
                  [clojure-lanterna "0.9.7"]
                  [org.clojure/tools.cli "0.3.5"]
                  [clj-time "0.14.0"]]
