@@ -14,24 +14,32 @@
 
 (def date-formatter (tf/formatters :date))
 
-(defn hash-nt-password [pwd]
+(defn hash-nt-password
+  "Given a password, return Windows NTLM compliant hash"
+  [pwd]
   (let [pwd-bytes (.getBytes pwd "UnicodeLittleUnmarked")
         md4 (doto (MD4.)
               (.engineUpdate pwd-bytes 0 (alength pwd-bytes)))
         hash-bytes (.engineDigest md4)]
     (Hexdump/toHexString hash-bytes 0 (* 2 (alength hash-bytes)))))
 
-(defn get-username [window row]
+(defn get-username
+  "Prompt the user for a username"
+  [window row]
   (u/command-prompt window "Username" row)
   (w/redraw-window window)
   (i/read-input-line :w1))
 
-(defn get-password [window row]
+(defn get-password
+  "Prompt the user for a password."
+  [window row]
   (u/command-prompt window "Password" row)
   (w/redraw-window window)
   (i/read-input-line window))
 
-(defn get-id-args [window row]
+(defn get-id-args
+  "Prompt for username and password to verify. Enter :exit to finish." 
+  [window row]
   (let [id (get-username window row)
         pwd (if-not (or (= ":exit" id)
                         (= "" id))
@@ -39,7 +47,9 @@
               nil)]
     {:id id :pwd pwd}))
 
-(defn display-ldap-info [user win]
+(defn display-ldap-info
+  "Display info about the username taken from LDAP."
+  [user win]
   (let [last-change-str (tf/unparse date-formatter
                                     (util/last-change-date
                                      (util/parse-int (:shadowLastChange user))))]
@@ -51,13 +61,14 @@
     (u/write-text win (str "Shadow Warning: " (:shadowWarning user)) 2 10)
     (u/write-text win (str "Shadow Last Change: " last-change-str) 2 11)))
 
-(defn display-pwd-info [user-rec pwd win]
+(defn display-pwd-info
+  "Display info about the entered password."
+  [user-rec pwd win]
   (let [nt-pwd (hash-nt-password pwd)
         ldap-nt-pwd (:sambaNTPassword user-rec)
         [bind-status msg] (ldap/check-auth (:uid user-rec) pwd)]
     (u/write-text win (str "Password " pwd) 2 12)
     (w/redraw-window win)
-    (println (str "Bind Status: " bind-status " MSG: " msg))
     (condp = bind-status
       true (u/write-text win (str "Password Match: yes") 2 13)
       false (u/write-text win (str "Password Match: no") 2 13)
@@ -70,7 +81,7 @@
         (u/write-text win (str "NEW:  " nt-pwd) 2 16)))))
 
 (defn main-window
-  "Main UI window"
+  "Main UI window. Will use dedicated window if possible or console when not."
   []
   (let [w1 (w/make-window :w1 60 20)
         win-cols (w/get-window-columns :w1)
@@ -81,13 +92,8 @@
     (u/write-line :w1 (f/centre-text title win-cols))
     (u/write-line :w1 (f/centre-text "Enter :exit to quit" win-cols))
     (loop [id-info (get-id-args :w1 prompt-row)]
-      (println (str "ID-INFO: " id-info))
       (condp = (:id id-info)
-        ":exit"  (do
-                   (println (str "You entered :exit to quit"))
-                   (println "Destroying Window")
-                   (w/destroy-window :w1)
-                   (println "Exiting"))
+        ":exit"  (w/destroy-window :w1)
         "" (recur (get-id-args :w1 prompt-row))
         (let [[user-rec msg] (ldap/get-id (:id id-info))]
           (u/clear-screen :w1 \space 3)
@@ -103,8 +109,9 @@
           (recur (get-id-args :w1 prompt-row)))))))
 
 (defn -main
-  "I don't do a whole lot ... yet."
+  "Main function - where we start"
   [& args]
   (println "Application: " (:app-name config))
   (println "Version:     " (:app-version config))
-  (println "Profile:     " (:app-profile config)))
+  (println "Profile:     " (:app-profile config))
+  (main-window))

@@ -17,7 +17,7 @@
 (defn make-window
   "Create a new window"
   [win-name cols rows]
-  (let [w (scr/get-screen :swing
+  (let [w (scr/get-screen :auto
                           {:cols cols
                            :rows rows
                            :resize-listener (make-resize-handler win-name)})
