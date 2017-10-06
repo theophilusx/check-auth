@@ -103,9 +103,13 @@
                              (display-ldap-info user-rec :w1)
                              (display-pwd-info user-rec (:pwd id-info) :w1))
             (and (= msg "OK")
-                 (= user-rec nil)) (u/write-text :w1 (str "Identity " (:id id-info) " not in LDAP") 2 5)
-            (not (= msg "OK")) (u/write-text :w1 (str "Connection to LDAP failed: " msg) 2 5)
-            :default (u/write-text :w1 (str "Unknown error - contact administrator")))
+                 (nil? user-rec)) (u/write-text :w1 (str "Identity "
+                                                         (:id id-info)
+                                                         " not in LDAP") 2 5)
+            (not= msg "OK") (u/write-text :w1 (str "Connection to LDAP failed: "
+                                                   msg) 2 5)
+            :default (u/write-text :w1
+                                   (str "Unknown error - contact administrator")))
           (recur (get-id-args :w1 prompt-row)))))))
 
 (defn -main

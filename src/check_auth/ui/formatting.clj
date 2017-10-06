@@ -49,7 +49,7 @@ by default. Optionally specify padding character"
     (<= (count txt) width) (dec (count txt))
     :else (loop [pos (dec (min (count txt) width))]
             (cond
-              (= pos 0) width
+              (zero? pos) width
               (= (nth txt pos) \space) pos
               :else (recur (dec pos))))))
 
@@ -57,12 +57,12 @@ by default. Optionally specify padding character"
   "Wrap text into lines with maximum width. Return vector of strings."
   ([txt width]
    (if (or (< width 1)
-           (= 0 (count txt)))
+           (zero? (count txt)))
      []
      (wrap-text txt width [])))
   ([txt width block]
    (cond
-     (= 0 (count txt)) block
+     (zero? (count txt)) block
      (<= (count txt) width) (conj block txt)
      :else (let [end (find-break-point txt width)]
              (cond
